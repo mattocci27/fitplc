@@ -4,6 +4,8 @@ A fork from [fitplc](https://github.com/RemkoDuursma/fitplc)
 
 - [Installation](#installation)
 
+- [New feature](#new-feature)
+
 To install the development version, use this command:
 
 # Installation
@@ -15,4 +17,10 @@ devtools::install_github("mattocci27/plcfit")
 library(plcfit2)
  
 ```
+
+# New feature
+
+`fitplc` has options for `method = "Inv_Weibull"` and `method =
+"Inv_nls_sigmoidal"`, which estimates Px values using inverse functions of Weibull
+and sigmoidal-exponential function, respectively.
 

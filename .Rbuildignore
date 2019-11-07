@@ -9,3 +9,5 @@ README.md
 docs/
 test.rmd
 LICENSE
+^.*\.rmd$
+^.*\.html$

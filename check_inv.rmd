@@ -1,0 +1,34 @@
+# Test for invere functions
+
+# Weibull
+
+```{r}
+
+SX <- 30
+PX <- 2
+X <- 50
+WP <- seq(0.1, 5, 0.1)
+relK <- fweibull(WP, SX, PX, X)
+WP_new <- inv_fweibull(relK, SX, PX, X) 
+
+WP
+WP_new
+
+```
+
+
+# Sigmoidal
+
+```{r}
+
+PX <- 2
+a <- 5
+X <- 50
+WP <- seq(0.1, 5, 0.1)
+relK <- fsigmoidal(WP, PX, a, X)
+WP_new <- inv_fsigmoidal(relK, PX, a, X) 
+
+WP
+WP_new
+
+```

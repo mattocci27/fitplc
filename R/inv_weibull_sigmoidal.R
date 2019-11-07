@@ -29,14 +29,10 @@ inv_fweibull <- function(k, SX, PX, X=50){
 #' curve(fweibull(x, PX=3, SX=40), from=0, to=6)
 #' curve(fsigmoidal(x, PX=3, a=4*(40/100)), add=TRUE, col="red")
 #' @export
-inv_fsigmoidal <- function(P, PX, a, X=50){
-  
+inv_fsigmoidal <- function(k, PX, a, X=50){
   X <- X[1] # vector might have been passed but X cannot actually vary.
-  P <- -P
-  PX <- -PX
-  b <- PX - (1/a)*(50/X - 1)
-  
-  1 - 1/(1 + exp(a*(P - b)))
+  b <- -PX - (1/a)*(50/X - 1)
+  -1/a * log(1/(1 - k) - 1) - b
 }
 
 

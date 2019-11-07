@@ -4,16 +4,16 @@
 \alias{inv_fsigmoidal}
 \title{Inverse-Sigmoidal vulnerability curve}
 \usage{
-inv_fsigmoidal(P, PX, a, X = 50)
+inv_fsigmoidal(k, PX, a, X = 50)
 }
 \arguments{
-\item{P}{Water potential (positive-valued MPa)}
-
 \item{PX}{Water potential at X loss of conductivity (positive valued).}
 
 \item{a}{Shape parameter, related to the slope at the inflection point (see Description).}
 
 \item{X}{If 50, PX is the P50.}
+
+\item{P}{Water potential (positive-valued MPa)}
 }
 \description{
 A sigmoidal-exponential function, which describes the relative conductivity as a function of the plant water potential. The relative conductivity is scaled to be 1 when water potential is zero. This function was used by Pammenter and vander Willigen (1998), but note that this implementation gives the relative conductivity, not the PLC (but relK = 1 - PLC). The slope of relK versus P at the inflection point can be calculated from the shape parameter (a) as slope = -a/4.
