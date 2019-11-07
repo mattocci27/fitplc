@@ -13,7 +13,7 @@
 #' @param random Variable that specifies random effects (unquoted; must be present in dfr).
 #' @param x If the P50 is to be returned, x = 50. Set this value if other points of the PLC curve should be estimated (although probably more robustly done via \code{\link{getPx}}).
 #' @param coverage The coverage of the confidence interval for the parameters (0.95 is the default).
-#' @param model Either 'Weibull', 'sigmoidal', 'loess' or 'nls_sigmoidal'. See Details.
+#' @param model Either 'Weibull', 'Inv-Weibull', 'sigmoidal', 'loess' or 'nls_sigmoidal'. See Details.
 #' @param startvalues Obsolete - starting values for Weibull now estimated from sigmoidal model fit.
 #' @param bootci If TRUE, also computes the bootstrap confidence interval.
 #' @param nboot The number of bootstrap replicates used for calculating confidence intervals.
@@ -183,7 +183,7 @@ fitplc <- function(dfr,
                    varnames = c(PLC="PLC", WP="MPa"),
                    weights=NULL,
                    random=NULL,
-                   model=c("Weibull","sigmoidal","loess","nls_sigmoidal"), 
+                   model=c("Weibull", "Inv_Weibull", "sigmoidal","loess","nls_sigmoidal"), 
                    x=50,
                    coverage=0.95,
                    bootci=TRUE,
@@ -277,6 +277,8 @@ fitplc <- function(dfr,
     out <- switch(model2,
                   Weibull_fixed = Weibull_fixed(Data, W, x, coverage, 
                                                 bootci, nboot, quiet),
+                  Inv_Weibull_fixed = Inv_Weibull_fixed(Data, W, x, coverage, 
+                                                bootci, nboot, quiet),
                   Weibull_random = Weibull_random(Data, W, x, coverage, msMaxIter),
                   loess_fixed = loess_fixed(Data, W, x, coverage, condfit,
                                             bootci, nboot, quiet, loess_span),
@@ -317,6 +319,52 @@ Weibull_fixed <- function(Data, W, x, coverage,
   if(!quiet)message("Fitting nls ...", appendLF=FALSE)
   
   fit <- nls(relK ~ fweibull(P,SX,PX,X),
+             data=Data, start=list(SX=sp$Sx, PX=sp$Px),
+             weights=W)
+  
+  if(!quiet)message("done.")
+  
+  inter_val <- ifelse(bootci, "confidence", "none")
+  
+  pred <- predict_nls(fit, xvarname="P", interval=inter_val, data=Data, 
+                      startList=list(SX=sp$Sx, PX=sp$Px), weights=W, 
+                      level=coverage,
+                      nboot=nboot)
+  
+  cipars <- try(suppressMessages(confint(fit, level=coverage)), silent=TRUE)
+  if(inherits(cipars, "try-error")){
+    cipars <- matrix(rep(NA,4),ncol=2)
+  }
+  cipars <- cbind(coef(fit), cipars)
+  dimnames(cipars) <- list(c("SX","PX"), c("Estimate", 
+                                           sprintf("Norm - %s",label_lowci(coverage)),
+                                           sprintf("Norm - %s",label_upci(coverage))))
+  
+  if(bootci){
+    cisx <- quantile(pred$boot[,"SX"], c((1-coverage)/2, 1 - (1-coverage)/2))
+    cipx <- quantile(pred$boot[,"PX"], c((1-coverage)/2, 1 - (1-coverage)/2))
+    
+    bootpars <- matrix(c(cisx[1],cipx[1],cisx[2],cipx[2]), nrow=2,
+                       dimnames=list(c("SX","PX"), ci_names("Boot", coverage)))
+    cipars <- cbind(cipars, bootpars)
+  }    
+  
+list(fit = fit, pred = pred, cipars = cipars)
+}
+
+Inv_Weibull_fixed <- function(Data, W, x, coverage, 
+                          bootci, nboot, quiet){
+  
+  # guess starting values from sigmoidal
+  f <- do_sigmoid_fit(Data, boot=FALSE, W=W)
+  p <- coef(f$fit)
+  sp <- sigfit_coefs(p[1], p[2], x=x)
+  
+  # fit
+  Data$X <- x  # Necessary for bootstrap - I think.
+  if(!quiet)message("Fitting nls ...", appendLF=FALSE)
+  
+  fit <- nls(P ~ inv_fweibull(relK,SX,PX,X),
              data=Data, start=list(SX=sp$Sx, PX=sp$Px),
              weights=W)
   

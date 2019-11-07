@@ -7,3 +7,5 @@ README.md
 ^C:\repos\fitplc\docs$
 ^_pkgdown\.yml$
 docs/
+test.rmd
+LICENSE

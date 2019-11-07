@@ -11,8 +11,8 @@ fitcond(dfr, varnames = c(K = "K", WP = "MPa"), Kmax = NULL,
   WP_Kmax = NULL, rescale_Px = FALSE, ...)
 
 fitplc(dfr, varnames = c(PLC = "PLC", WP = "MPa"), weights = NULL,
-  random = NULL, model = c("Weibull", "sigmoidal", "loess",
-  "nls_sigmoidal"), x = 50, coverage = 0.95, bootci = TRUE,
+  random = NULL, model = c("Weibull", "Inv_Weibull", "sigmoidal",
+  "loess", "nls_sigmoidal"), x = 50, coverage = 0.95, bootci = TRUE,
   nboot = 999, quiet = TRUE, startvalues = NULL,
   shift_zero_min = FALSE, loess_span = 0.7, msMaxIter = 1000, ...)
 
@@ -37,7 +37,7 @@ fitconds(dfr, group, ...)
 
 \item{random}{Variable that specifies random effects (unquoted; must be present in dfr).}
 
-\item{model}{Either 'Weibull', 'sigmoidal', 'loess' or 'nls_sigmoidal'. See Details.}
+\item{model}{Either 'Weibull', 'Inv-Weibull', 'sigmoidal', 'loess' or 'nls_sigmoidal'. See Details.}
 
 \item{x}{If the P50 is to be returned, x = 50. Set this value if other points of the PLC curve should be estimated (although probably more robustly done via \code{\link{getPx}}).}
 
