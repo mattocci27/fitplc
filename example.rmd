@@ -1,5 +1,5 @@
 ---
-title: Example for fitplc
+title: Examples for fitplc
 author: Masatoshi Katabuchi
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output:
