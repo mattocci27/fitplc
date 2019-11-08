@@ -365,12 +365,14 @@ summary {
 </div>
 
 
-<div id="test-for-invere-functions" class="section level1">
-<h1>Test for invere functions</h1>
+<div id="test-for-inverse-functions" class="section level1">
+<h1>Test for inverse functions</h1>
 </div>
 <div id="weibull" class="section level1">
 <h1>Weibull</h1>
-<pre class="r"><code>SX &lt;- 30
+<pre class="r"><code>library(fitplc2)
+
+SX &lt;- 30
 PX &lt;- 2
 X &lt;- 50
 WP &lt;- seq(0.1, 5, 0.1)
@@ -388,6 +390,24 @@ WP</code></pre>
 </div>
 <div id="sigmoidal" class="section level1">
 <h1>Sigmoidal</h1>
+<pre class="r"><code>a &lt;- 5
+b &lt;- 2
+X &lt;- 50
+WP &lt;- seq(0.1, 5, 0.1)
+relK &lt;- 1 / (1 + exp(a*(WP - b))) 
+WP_new &lt;- 1/a * log(1/relK - 1)  + b
+
+WP</code></pre>
+<pre><code>##  [1] 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7
+## [18] 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0 3.1 3.2 3.3 3.4
+## [35] 3.5 3.6 3.7 3.8 3.9 4.0 4.1 4.2 4.3 4.4 4.5 4.6 4.7 4.8 4.9 5.0</code></pre>
+<pre class="r"><code>WP_new</code></pre>
+<pre><code>##  [1] 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4 1.5 1.6 1.7
+## [18] 1.8 1.9 2.0 2.1 2.2 2.3 2.4 2.5 2.6 2.7 2.8 2.9 3.0 3.1 3.2 3.3 3.4
+## [35] 3.5 3.6 3.7 3.8 3.9 4.0 4.1 4.2 4.3 4.4 4.5 4.6 4.7 4.8 4.9 5.0</code></pre>
+</div>
+<div id="sigmoidal-exponential" class="section level1">
+<h1>Sigmoidal-exponential</h1>
 <pre class="r"><code>PX &lt;- 2
 a &lt;- 5
 X &lt;- 50

@@ -1,8 +1,9 @@
-# Test for invere functions
+# Test for inverse functions
 
 # Weibull
 
 ```{r}
+library(fitplc2)
 
 SX <- 30
 PX <- 2
@@ -16,8 +17,23 @@ WP_new
 
 ```
 
-
 # Sigmoidal
+
+```{r}
+
+a <- 5
+b <- 2
+X <- 50
+WP <- seq(0.1, 5, 0.1)
+relK <- 1 / (1 + exp(a*(WP - b))) 
+WP_new <- 1/a * log(1/relK - 1)  + b
+
+WP
+WP_new
+
+```
+
+# Sigmoidal-exponential
 
 ```{r}
 
