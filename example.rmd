@@ -1,0 +1,137 @@
+---
+title: Example for fitplc
+author: Masatoshi Katabuchi
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+#rmdformats::material
+  html_document:
+    fig_caption: yes
+    theme: spacelab #readable #sandstone #spacelab #flatly
+    highlight: pygments #tango #kate
+    toc: TRUE
+    toc_depth: 2
+    number_sections: TRUE
+    toc_float:
+      collapsed: TRUE
+      smooth_scroll: TRUE
+      toc: true
+---
+
+```{r setup, include=FALSE}
+htmltools::tagList(rmarkdown::html_dependency_font_awesome())
+```
+
+<a href="https://twitter.com/mattocci"><i class="fa fa-twitter fa-1x"></i> Twittter</a>
+<a href="https://github.com/mattocci27/"><i class="fa fa-github fa-1x"></i> Github</a>
+<a href="mailto:mattocci27@gmail.com"><i class="fa fa-envelope fa-1x"></i> Email</a>
+
+# Data
+
+```{r}
+library(fitplc2)
+
+set.seed(123)
+
+SX0 <- 30
+PX0 <- 2
+X <- 50
+xx <- seq(0.01, 5, length = 100)
+yy <- fweibull(xx, SX0, PX0, X=50)
+yy2 <- rnorm(100, yy, 0.01)
+
+dat <- tibble(relK = yy2, WP = xx) %>%
+  filter(relK > 0 & relK < 1) %>%
+  mutate(PLC = 100 - 100 * relK)
+
+dat
+
+```
+
+# PLC
+
+$$
+PLC = \frac{K_{max} - K}{K_{max}} \cdot 100
+$$
+
+where $K$ is raw conductance, $K_{max}$ is the maximum value of $K$.
+
+# Functions
+
+## Weibull
+
+$$
+\frac{K}{K_{max}} = \Biggl(1 - \frac{X}{100}\Biggr)^{\Biggl[{\biggl(\frac{P}{P_X}}\biggr)^{\frac{P_X
+S_X}{V}}\Biggr]}
+$$
+
+
+$$
+V = (X-100)\text{ln}\Biggl(1-\frac{X}{100}\Biggr)
+$$
+
+where $P_X$ is the xylem pressure (P) where X% of the conductivity is lost, $S_X$ is the derivative (% MPa^-1^) at X (e.g. $S_{50}$ is the slope of the curve at $P_{50}$).
+
+```{r}
+fit1 <- fitplc2::fitplc(dat,
+                        varnames = c(PLC = "PLC", WP = "WP"),
+                        nboot=100)
+
+fit1
+```
+
+
+## Invere-Weibull
+
+$$
+P = \Biggl[\frac{\text{ln}K}{\text{ln}\bigl(1-\frac{X}{100}\bigr)}\Biggr]^{\frac{V}{P_X
+S_X}} P_X
+$$
+
+
+```{r}
+fit2 <- fitplc2::fitplc(dat,
+                        model = "Inv_Weibull",
+                        varnames = c(PLC = "PLC", WP = "WP"),
+                        nboot=100)
+fit2
+```
+
+## Sigmoidal
+
+$$
+K = \frac{1}{1 + exp(a(P - b))}
+$$
+
+where $a$ and $b$ are constants.
+
+```{r}
+
+fit3 <- fitplc2::fitplc(dat,
+                        model = "nls_sigmoidal",
+                        varnames = c(PLC = "PLC", WP = "WP"),
+                        nboot=100)
+fit3
+```
+
+## Inverse-sigmoidal (logit)
+
+$$
+P = \frac{log(\frac{1}{K} - 1)}{a} + b
+$$
+
+
+```{r}
+fit4 <- fitplc2::fitplc(dat,
+                        model = "Inv_nls_sigmoidal",
+                        varnames = c(PLC = "PLC", WP = "WP"),
+                        nboot=100)
+fit4
+```
+
+# Reference
+
+- Duursma R.A., Choat B. 2017. fitplc - an R package to fit hydraulic vulnerability curves. Journal of Plant Hydraulics. [doi:10.20870/jph.2017.e002](http://jplanthydro.org/article/view/1541)
+
+- Ogle, K. , Barber, J. J., Willson, C. and Thompson, B. 2009, Hierarchical statistical modeling of xylem vulnerability to cavitation. New Phytologist, 182: 541-554. [doi:10.1111/j.1469-8137.2008.02760.x](https://nph.onlinelibrary.wiley.com/doi/full/10.1111/j.1469-8137.2008.02760.x)
+
+- Pammenter NW, Van der Willigen CV. 1998. A mathematical and statistical analysis of the curves illustrating vulnerability of xylem to cavitation. Tree Physiology 18: 589–593. [https://doi.org/10.1093/treephys/18.8-9.589](https://academic.oup.com/treephys/article/18/8-9/589/1632591)
