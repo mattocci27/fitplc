@@ -576,7 +576,6 @@ Inv_nls_sigmoidal_fixed <- function(Data, W, x, coverage,
   # guess starting values from linearized sigmoidal
   f <- do_sigmoid_fit(Data, boot=FALSE, W=W)
   p <- coef(f$fit)
-  sp <- sigfit_coefs(p[1],p[2],x=x)
   # As in sigfit_coefs, but only partial conversion
   a <- p[2]
   b <- p[1]/p[2]
@@ -584,11 +583,14 @@ Inv_nls_sigmoidal_fixed <- function(Data, W, x, coverage,
   # fit
   Data$X <- x  # Necessary for bootstrap (scoping issue).
 
-  #fit <- nls(relK ~ 1/(1 + exp(a*(P - b))),
-  fit <- nls(P ~ inv_fsigmoidal(relK, PX, a, X),
+#  inv_fsigmoidal2 <- function(x, a, b) {
+#    1/a * log(1/x - 1) + b
+#  }
+
+  fit <- nls(P ~ 1/a * log(1/relK - 1) + b,
              data=Data, 
              start=list(a=a, 
-                        PX=sp$Px),
+                        b=b),
              weights=W)
 
   nls_sig_convert_coef <- function(coefs, x){
@@ -606,7 +608,7 @@ Inv_nls_sigmoidal_fixed <- function(Data, W, x, coverage,
   sp <- nls_sig_convert_coef(fit_ab, x=x)
   
   
-  Px_ci <- car::deltaMethod(fit, sprintf("(log(1/(1 - %s/100) - 1)/a) + b + 10000",x), 
+  Px_ci <- car::deltaMethod(fit, sprintf("(log(1/(1 - %s/100) - 1)/a) + b",x), 
               parameterNames=c("a","b"))
   
   # deltaMethod not needed here but convenient and equivalent
@@ -645,7 +647,7 @@ Inv_nls_sigmoidal_fixed <- function(Data, W, x, coverage,
     cipars <- cbind(cipars, bootpars)
   }
   
-list(fit = fit, pred = pred, cipars = cipars)
+list(fit = fit, pred = pred, cipars = cipars, test = "test")
 }
 
 sigmoidal_random <- function(Data, W, x, coverage, quiet){
