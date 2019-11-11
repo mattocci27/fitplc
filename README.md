@@ -22,5 +22,5 @@ library(fitplc2)
 
 `fitplc` has options for `method = "Inv_Weibull"` and `method =
 "Inv_nls_sigmoidal"`, which estimates Px values using inverse functions of Weibull
-and sigmoidal-exponential function, respectively.
+and sigmoidal function, respectively.
 
