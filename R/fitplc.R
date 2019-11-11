@@ -191,6 +191,9 @@ fitplc <- function(dfr,
                    bootci=TRUE,
                    nboot=999,
                    quiet=TRUE,
+                   from = NULL,
+                   to = NULL,
+                   n = 101,
                    startvalues=NULL,
                    shift_zero_min = FALSE,
                    loess_span = 0.7, 
@@ -278,7 +281,7 @@ fitplc <- function(dfr,
     
     out <- switch(model2,
                   Weibull_fixed = Weibull_fixed(Data, W, x, coverage, 
-                                                bootci, nboot, quiet),
+                                                bootci, nboot, quiet, n, from, to),
                   Inv_Weibull_fixed = Inv_Weibull_fixed(Data, W, x, coverage, 
                                                 bootci, nboot, quiet),
                   Weibull_random = Weibull_random(Data, W, x, coverage, msMaxIter),
@@ -290,7 +293,7 @@ fitplc <- function(dfr,
                                                     bootci, nboot, quiet),
                   sigmoidal_random = sigmoidal_random(Data, W, x, coverage, quiet),
                   nls_sigmoidal_fixed = nls_sigmoidal_fixed(Data, W, x, coverage,
-                                                            bootci, nboot, quiet))
+                                                            bootci, nboot, quiet, n, from , to))
     
 structure(c(out,
             list(data = Data,
@@ -311,7 +314,7 @@ structure(c(out,
 
 
 Weibull_fixed <- function(Data, W, x, coverage, 
-                          bootci, nboot, quiet){
+                          bootci, nboot, quiet, n, from, to){
   
   # guess starting values from sigmoidal
   f <- do_sigmoid_fit(Data, boot=FALSE, W=W)
@@ -332,6 +335,9 @@ Weibull_fixed <- function(Data, W, x, coverage,
   
   pred <- predict_nls(fit, xvarname="P", interval=inter_val, data=Data, 
                       startList=list(SX=sp$Sx, PX=sp$Px), weights=W, 
+                      n = n,
+                      from = from,
+                      to = to,
                       level=coverage,
                       nboot=nboot)
   
@@ -495,7 +501,7 @@ list(fit = f$fit, pred = pred, cipars = cipars)
 }
 
 nls_sigmoidal_fixed <- function(Data, W, x, coverage,
-                                bootci, nboot, quiet){
+                                bootci, nboot, quiet, n, from, to){
   
   # guess starting values from linearized sigmoidal
   f <- do_sigmoid_fit(Data, boot=FALSE, W=W)
@@ -546,6 +552,9 @@ nls_sigmoidal_fixed <- function(Data, W, x, coverage,
   pred <- predict_nls(fit, xvarname="P", interval=inter_val, data=Data, 
                       startList=list(a=fit_ab[1], b=fit_ab[2]), weights=W, 
                       level=coverage,
+                      n = n,
+                      from = from,
+                      to = to,
                       nboot=nboot)
   
   if(bootci){
