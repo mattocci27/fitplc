@@ -504,19 +504,19 @@ nls_sigmoidal_fixed <- function(Data, W, x, coverage,
                                 bootci, nboot, quiet, n, from, to){
   
   # guess starting values from linearized sigmoidal
-  f <- do_sigmoid_fit(Data, boot=FALSE, W=W)
+  f <- do_sigmoid_fit(Data, boot = FALSE, W = W)
   p <- coef(f$fit)
-  
+
   # As in sigfit_coefs, but only partial conversion
   a <- p[2]
-  b <- p[1]/p[2]
+  b <- p[1] / p[2]
   
   # fit
   Data$X <- x  # Necessary for bootstrap (scoping issue).
   
-  fit <- nls(relK ~ 1/(1 + exp(a*(P - b))),
-             data=Data, start=list(a=a, b=b),
-             weights=W)
+  fit <- nls(relK ~ 1 / (1 + exp(a * (P - b))),
+             data = Data, start = list(a = a, b = b),
+             weights = W)
 
   nls_sig_convert_coef <- function(coefs, x){
     
@@ -524,38 +524,37 @@ nls_sigmoidal_fixed <- function(Data, W, x, coverage,
     b <- coefs[2]
     Px <- ab_to_px(a, b, 100 - x)
     
-    Sx <- 100 * sig2d(Px,a,b)
+    Sx <- 100 * sig2d(Px, a, b)
     
-    list(Px=Px, Sx=Sx)
+    list(Px = Px, Sx = Sx)
   }
   
   fit_ab <- coef(fit)
-  sp <- nls_sig_convert_coef(fit_ab, x=x)
-  
-  
+  sp <- nls_sig_convert_coef(fit_ab, x = x)
+
   Px_ci <- car::deltaMethod(fit, sprintf("(log(1/(1 - %s/100) - 1)/a) + b",x), 
-              parameterNames=c("a","b"))
+              parameterNames = c("a", "b"))
   
   # deltaMethod not needed here but convenient and equivalent
   Sx_ci <- car::deltaMethod(fit, 
                 sprintf("-(exp(a * (%s - b)) * a/(1 + exp(a * (%s - b)))^2)", sp$Px,sp$Px), 
-                parameterNames=c("a","b"))
+                parameterNames = c("a", "b"))
   
   cipars <- rbind(-100 * Sx_ci, Px_ci)
-  cipars[1,] <- cipars[1, c(1,2,4,3)]
+  cipars[1,] <- cipars[1, c(1, 2, 4, 3)]
   
   cipars$SE <- NULL
-  dimnames(cipars) <- list(c("SX","PX"),
-                           c("Estimate", ci_names("Norm",coverage)))
+  dimnames(cipars) <- list(c("SX", "PX"),
+                           c("Estimate", ci_names("Norm", coverage)))
   
   inter_val <- ifelse(bootci, "confidence", "none")
-  pred <- predict_nls(fit, xvarname="P", interval=inter_val, data=Data, 
-                      startList=list(a=fit_ab[1], b=fit_ab[2]), weights=W, 
-                      level=coverage,
+  pred <- predict_nls(fit, xvarname="P", interval = inter_val, data = Data, 
+                      startList = list(a = fit_ab[1], b = fit_ab[2]), weights = W, 
+                      level = coverage,
                       n = n,
                       from = from,
                       to = to,
-                      nboot=nboot)
+                      nboot = nboot)
   
   if(bootci){
     pred$boot2 <- pred$boot
@@ -567,8 +566,8 @@ nls_sigmoidal_fixed <- function(Data, W, x, coverage,
     cisx <- -rev(cisx)
     cipx <- quantile(pred$boot[,"Px"], c((2-coverage)/2, 1 - (1-coverage)/2))
     
-    bootpars <- matrix(c(cisx[1],cipx[1],cisx[2],cipx[2]), nrow=2,
-                       dimnames=list(c("SX","PX"),
+    bootpars <- matrix(c(cisx[1], cipx[1], cisx[2], cipx[2]), nrow = 2,
+                       dimnames = list(c("SX", "PX"),
                                      c(sprintf("Boot - %s",label_lowci(coverage)),
                                        sprintf("Boot - %s",label_upci(coverage)))))
     
