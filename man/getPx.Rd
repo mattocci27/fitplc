@@ -8,8 +8,7 @@
 \usage{
 getPx(object, x = 50, coverage = 0.95, rescale_Px = FALSE, ...)
 
-\method{getPx}{default}(object, x = 50, coverage = 0.95,
-  rescale_Px = FALSE, ...)
+\method{getPx}{default}(object, x = 50, coverage = 0.95, rescale_Px = FALSE, ...)
 
 \method{getPx}{manyplcfit}(object, ...)
 }
