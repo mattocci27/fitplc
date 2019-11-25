@@ -1,7 +1,7 @@
 Package: fitplc2
 Type: Package
 Title: Fit Hydraulic Vulnerability Curves
-Version: 1.3.2.100
+Version: 1.3.2.101
 Authors@R: c(person("Remko", "Duursma", role = c("aut", "cre"),email = "remkoduursma@gmail.com"),
              person("Masatoshi", "Katabuchi", role = "ctb"))
 Maintainer: Remko Duursma <remkoduursma@gmail.com>
@@ -12,4 +12,4 @@ BugReports: https://www.bitbucket.org/remkoduursma/fitplc/issues
 Depends: nlme, car
 Suggests: testthat
 LazyData: yes
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.0

@@ -564,7 +564,7 @@ nls_sigmoidal_fixed <- function(Data, W, x, coverage,
     
     cisx <- quantile(pred$boot[,"Sx"], c((1-coverage)/2, 1 - (1-coverage)/2))
     cisx <- -rev(cisx)
-    cipx <- quantile(pred$boot[,"Px"], c((2-coverage)/2, 1 - (1-coverage)/2))
+    cipx <- quantile(pred$boot[,"Px"], c((1-coverage)/2, 1 - (1-coverage)/2))
     
     bootpars <- matrix(c(cisx[1], cipx[1], cisx[2], cipx[2]), nrow = 2,
                        dimnames = list(c("SX", "PX"),
