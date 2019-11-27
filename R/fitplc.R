@@ -288,7 +288,8 @@ fitplc <- function(dfr,
                   loess_fixed = loess_fixed(Data, W, x, coverage, condfit,
                                             bootci, nboot, quiet, loess_span),
                   sigmoidal_fixed = sigmoidal_fixed(Data, W, x, coverage, 
-                                                    bootci, nboot, quiet),
+                                                    bootci, nboot, quiet,
+                                                    n, from, to),
                   Inv_nls_sigmoidal_fixed = Inv_nls_sigmoidal_fixed(Data, W, x, coverage, 
                                                     bootci, nboot, quiet),
                   sigmoidal_random = sigmoidal_random(Data, W, x, coverage, quiet),
@@ -471,7 +472,7 @@ list(fit = fit, pred = pred, cipars = cipars)
 
 
 sigmoidal_fixed <- function(Data, W, x, coverage, 
-                            bootci, nboot, quiet){
+                            bootci, nboot, quiet, n, from, to){
   
   f <- do_sigmoid_fit(Data, boot=TRUE, nboot=nboot, W=W)
   
@@ -495,7 +496,7 @@ sigmoidal_fixed <- function(Data, W, x, coverage,
                            c("Estimate", ci_names("Boot",coverage)))
   
   # f must be component with 'fit' and 'boot'
-  pred <- get_boot_pred_sigmoid(f, Data, coverage)
+  pred <- get_boot_pred_sigmoid(f, Data, coverage, from, to, n)
   
 list(fit = f$fit, pred = pred, cipars = cipars)
 }
@@ -738,12 +739,15 @@ list(Px=unname(Px), Sx=unname(Sx))
 }
 
 # Bootstrap predictions for the sigmoidal model
-get_boot_pred_sigmoid <- function(f, data, coverage){
+get_boot_pred_sigmoid <- function(f, data, coverage, from = NULL, to = NULL, n = 101){
   
-  preddfr <- data.frame(minP=seq_within(data$minP))
-  
+  if(is.null(from) || is.null(to)){
+   preddfr <- data.frame(minP=seq_within(data$minP))
+  } else {
+   preddfr <- data.frame(
+                minP = -seq(from, to, length = n))
+  }
   normpred <- sigmoid_untrans(predict(f$fit, preddfr, interval="none"))
-  
   bootm <- apply(f$boot,1, function(x)x[1] + x[2]*preddfr$minP)
   bootpred <- as.data.frame(t(apply(bootm, 1, boot_ci, coverage=coverage)))
   names(bootpred) <- c("lwr","upr")
