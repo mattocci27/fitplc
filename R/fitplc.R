@@ -292,7 +292,8 @@ fitplc <- function(dfr,
                                                     n, from, to),
                   Inv_nls_sigmoidal_fixed = Inv_nls_sigmoidal_fixed(Data, W, x, coverage, 
                                                     bootci, nboot, quiet),
-                  sigmoidal_random = sigmoidal_random(Data, W, x, coverage, quiet),
+                  sigmoidal_random = sigmoidal_random(Data, W, x, coverage, quiet,
+                                                      n, from, to),
                   nls_sigmoidal_fixed = nls_sigmoidal_fixed(Data, W, x, coverage,
                                                             bootci, nboot, quiet, n, from , to))
     
@@ -659,7 +660,7 @@ Inv_nls_sigmoidal_fixed <- function(Data, W, x, coverage,
 list(fit = fit, pred = pred, cipars = cipars, test = "test")
 }
 
-sigmoidal_random <- function(Data, W, x, coverage, quiet){
+sigmoidal_random <- function(Data, W, x, coverage, quiet, n, from, to){
   
   # With random effect
   fit <- do_sigmoid_lme_fit(Data)
@@ -668,19 +669,29 @@ sigmoidal_random <- function(Data, W, x, coverage, quiet){
   
   # deltaMethod not needed here but convenient and equivalent
   Sx_ci <- car::deltaMethod(fit, "100*b1/4", parameterNames=c("b0","b1"))
-  cipars <- rbind(Sx_ci, Px_ci)
+  cipars <- as.data.frame(rbind(Sx_ci, Px_ci))
   cipars$SE <- NULL
   dimnames(cipars) <- list(c("SX","PX"),
                            c("Estimate", ci_names("Norm",coverage)))
   
   predran <- lapply(split(Data, Data$G), function(x){
     
+
+  if(is.null(from) || is.null(to)){
     ps <- seq_within(x$minP, n=101)
+  } else {
+    ps <- -seq(from, to, length = n)
+  }
     newdat <- data.frame(minP=ps, G=unique(x$G))
     
     list(x=-ps, fit=sigmoid_untrans(unname(predict(fit, newdat)))) 
   })
+
+  if(is.null(from) || is.null(to)) {
   ps <- seq_within(Data$minP, n=101)
+  } else {
+    ps <- -seq(from, to, length = n)
+  }
   newdat <- data.frame(minP=ps, X=x)
   pred <- list(x=-ps, fit=predict(fit, newdat, level=0), ran=predran)
   pred$fit <- sigmoid_untrans(pred$fit)
