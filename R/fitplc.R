@@ -284,7 +284,8 @@ fitplc <- function(dfr,
                                                 bootci, nboot, quiet, n, from, to),
                   Inv_Weibull_fixed = Inv_Weibull_fixed(Data, W, x, coverage, 
                                                 bootci, nboot, quiet),
-                  Weibull_random = Weibull_random(Data, W, x, coverage, msMaxIter),
+                  Weibull_random = Weibull_random(Data, W, x, coverage, msMaxIter,
+                                                  bootci, nboot, quiet,  n, from, to),
                   loess_fixed = loess_fixed(Data, W, x, coverage, condfit,
                                             bootci, nboot, quiet, loess_span),
                   sigmoidal_fixed = sigmoidal_fixed(Data, W, x, coverage, 
@@ -293,7 +294,7 @@ fitplc <- function(dfr,
                   Inv_nls_sigmoidal_fixed = Inv_nls_sigmoidal_fixed(Data, W, x, coverage, 
                                                     bootci, nboot, quiet),
                   sigmoidal_random = sigmoidal_random(Data, W, x, coverage, quiet,
-                                                      n, from, to),
+                                                  bootci, nboot, n, from, to),
                   nls_sigmoidal_fixed = nls_sigmoidal_fixed(Data, W, x, coverage,
                                                             bootci, nboot, quiet, n, from , to))
     
@@ -411,14 +412,15 @@ list(fit = fit, pred = pred, cipars = cipars)
 }
 
 
-Weibull_random <- function(Data, W, x, coverage, msMaxIter){
-  
+Weibull_random <- function(Data, W, x, coverage, msMaxIter,
+                           bootci, nboot, quiet, n, from, to){
   # guess starting values from sigmoidal
   f <- do_sigmoid_fit(Data, boot=FALSE, W=W)
   p <- coef(f$fit)
   sp <- sigfit_coefs(p[1],p[2],x=x)
   
   Data$X <- x  # Necessary for bootstrap - I think.
+  if(!quiet)message("Fitting nls ...", appendLF=FALSE)
   
   fit <- nlme(relK ~ fweibull(P, SX, PX, X),
               fixed=list(SX ~ 1, PX ~ 1),
@@ -444,10 +446,84 @@ Weibull_random <- function(Data, W, x, coverage, msMaxIter){
   colnames(cipars) <- c("Estimate", ci_names("Norm", coverage))
   
   attributes(cipars)$label <- NULL
-  
-list(fit = fit, pred = pred, cipars = cipars)
-}
 
+  fit_mixed_fun <- function(data, sp){
+    #fit <- nlme({{relK}} ~ fweibull({{P}}, SX, PX, {{X}}),
+    tryCatch(
+      fit <- nlme(relK ~ fweibull(P, SX, PX, X),
+                  fixed=list(SX ~ 1, PX ~ 1),
+                  random= SX + PX ~ 1|G,
+                  start=list(fixed=c(SX=sp[[2]], 
+                                     PX=sp[[1]])),
+                  control=nlmeControl(msMaxIter = msMaxIter, eval.max=1e06),
+                  data=data),
+       error = function(e){})
+    if (!is.null(fit)) {
+      SX <- fixef(fit)[1]
+      PX <- fixef(fit)[2]
+      tibble(SX, PX)
+    }
+  }
+
+  boot_fun <- function(Data, sp, nboot) {
+    tibble(boot = 1:nboot) %>%
+      group_by(boot) %>%
+      nest() %>%
+      mutate(data =
+        map(
+          boot,
+          ~ .cases.resamp(
+            dat = {{Data}}, 
+            cluster = c("G", ".id"), 
+            resample = c(TRUE, TRUE)))) %>%
+      mutate(tmp = map(data, ~ length(unique(.$G)))) %>%
+      filter(tmp >  2) %>%
+      mutate(fit = map(data, fit_mixed_fun, sp)) %>%
+      mutate(tmp = map_lgl(fit, is.null)) %>%
+      filter(tmp == FALSE) %>%
+      dplyr::select(boot, fit) %>%
+      unnest(cols = c(fit)) %>%
+      ungroup
+  }
+
+  boot2 <- boot_fun(Data, sp, nboot)    
+
+  if(is.null(from) || is.null(to)){
+    xval <- Data$P
+    if(is.null(from)) from <- min(xval)
+    if(is.null(to)) to <- max(xval)
+    xi <- seq(from, to, length = n)
+  } else {
+    xi <- Data$P
+  }
+
+  relK_ <- fweibull(xi, 
+                    SX = fixef(fit)[1],
+                    PX = fixef(fit)[2],
+                    X = x) 
+
+  fit_ <- (1 - relK_) * 100
+  
+  pred_fweibull <- function(PX, SX, P, X) {
+    relK <- fweibull(P, SX, PX, X) 
+    (1 - relK) * 100
+  }
+
+  boot3 <- boot2 %>%
+    mutate(ci = map2(PX, SX, pred_fweibull, P = xi, X = x))
+  
+  mat <- matrix(unlist(boot3$ci), nrow = length(xi))
+  min_ <- apply(mat, 1, function(x)quantile(x, 0.025))
+  max_ <- apply(mat, 1, function(x)quantile(x, 0.975))
+
+  pred2 <- list(x = xi,
+                fit = fit_,
+                lwr = min_,
+                upr = max_,
+                boot = boot2)
+
+  list(fit = fit, pred = pred2, cipars = cipars, pred2 = pred)
+}
 
 
 loess_fixed <- function(Data, W, x, coverage, condfit,
@@ -660,7 +736,7 @@ Inv_nls_sigmoidal_fixed <- function(Data, W, x, coverage,
 list(fit = fit, pred = pred, cipars = cipars, test = "test")
 }
 
-sigmoidal_random <- function(Data, W, x, coverage, quiet, n, from, to){
+sigmoidal_random <- function(Data, W, x, coverage, quiet, bootci, nboot, n, from, to){
   
   # With random effect
   fit <- do_sigmoid_lme_fit(Data)
@@ -695,9 +771,71 @@ sigmoidal_random <- function(Data, W, x, coverage, quiet, n, from, to){
   newdat <- data.frame(minP=ps, X=x)
   pred <- list(x=-ps, fit=predict(fit, newdat, level=0), ran=predran)
   pred$fit <- sigmoid_untrans(pred$fit)
-  
 
-list(fit = fit, pred = pred, cipars = cipars)  
+  fit_mixed_fun <- function(data, sp){
+    fit <- do_sigmoid_lme_fit(data)
+    if (!is.null(fit)) {
+      b0 <- fixef(fit)[1]
+      b1 <- fixef(fit)[2]
+      SX <- as.numeric(100 * b1 / 4)
+      PX <- as.numeric(b0 / b1)
+      tibble(SX, PX, b0, b1)
+    }
+  }
+
+  boot_fun <- function(Data, sp, nboot) {
+    tibble(boot = 1:nboot) %>%
+      group_by(boot) %>%
+      nest() %>%
+      mutate(data =
+        map(
+          boot,
+          ~ .cases.resamp(
+            dat = {{Data}}, 
+            cluster = c("G", ".id"), 
+            resample = c(TRUE, TRUE)))) %>%
+      mutate(tmp = map(data, ~ length(unique(.$G)))) %>%
+      filter(tmp >  2) %>%
+      mutate(fit = map(data, fit_mixed_fun, sp)) %>%
+      mutate(tmp = map_lgl(fit, is.null)) %>%
+      filter(tmp == FALSE) %>%
+      dplyr::select(boot, fit) %>%
+      unnest(cols = c(fit)) %>%
+      ungroup
+  }
+
+  boot2 <- boot_fun(Data, sp, nboot)    
+
+  if(is.null(from) || is.null(to)){
+    xval <- Data$P
+    if(is.null(from)) from <- min(xval)
+    if(is.null(to)) to <- max(xval)
+    xi <- seq(from, to, length = n)
+  } else {
+    xi <- Data$P
+  }
+  
+  tmp <- fixef(fit)[1] - fixef(fit)[2] * xi
+  fit_ <- 100 / (exp(tmp) + 1)
+
+  pred_sigmoidal <- function(b0, b1, P) {
+    tmp <- b0 - b1 * xi
+    100 / (exp(tmp) + 1)
+  }
+
+  boot3 <- boot2 %>%
+    mutate(ci = map2(b0, b1, pred_sigmoidal, P = xi))
+  
+  mat <- matrix(unlist(boot3$ci), nrow = length(xi))
+  min_ <- apply(mat, 1, function(x)quantile(x, 0.025))
+  max_ <- apply(mat, 1, function(x)quantile(x, 0.975))
+
+  pred2 <- list(x = xi,
+                fit = fit_,
+                lwr = min_,
+                upr = max_,
+                boot = boot2)
+  list(fit = fit, pred = pred2, cipars = cipars, pred2 = pred)
 }
 
 
@@ -831,9 +969,50 @@ boot_px_loess <- function(fit, Data, B=999, span, x, rescale = FALSE){
 return(px)
 }
 
-
-
-
+# from aloy/lmeresampler
+.cases.resamp <- function(dat, cluster, resample) {
+  # exit early for trivial data
+  if(nrow(dat) == 1 || all(resample==FALSE))
+    return(dat)
+  
+  ver <- as.numeric_version(packageVersion("dplyr"))
+  res <- dat
+  
+  for(i in 1:length(cluster)) {
+    
+    if(i==1 & resample[i]) {
+      dots <- cluster[1]
+      grouped <- dplyr::group_by_(res, dots)
+      g_rows <- dplyr::group_rows(grouped)
+      # g_rows <- ifelse(ver >= "0.8.0", dplyr::group_rows(grouped), attributes(grouped)$indices)
+      cls <- sample(seq_along(g_rows), replace = resample[i])
+      idx <- unlist(g_rows[cls], recursive = FALSE)
+      res <- res[idx, ]
+    } else{
+      if(i == length(cluster) & resample[i]) {
+        dots <- cluster[-i]
+        grouped <- dplyr::group_by_(res, .dots = dots)
+        res <- dplyr::sample_frac(grouped, size = 1, replace = TRUE)
+      } else{
+        if(resample[i]) {
+          dots <- cluster[i]
+          res <- split(res, res[, cluster[1:(i-1)]], drop = TRUE)
+          res <- plyr::ldply(res, function(df) {
+            grouped <- dplyr::group_by_(df, .dots = dots)
+            g_rows <- dplyr::group_rows(grouped)
+            # g_rows <- ifelse(ver >= "0.8.0", dplyr::group_rows(grouped), attributes(grouped)$indices)
+            cls <- sample(seq_along(g_rows), replace = resample[i])
+            idx <- unlist(g_rows[cls], recursive = FALSE)
+            grouped[idx, ]
+          }, .id = NULL)
+        }
+      }
+    }
+    
+    
+  }
+  return(res)
+}
 
 
 
