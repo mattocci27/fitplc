@@ -775,11 +775,11 @@ sigmoidal_random <- function(Data, W, x, coverage, quiet, bootci, nboot, n, from
   fit_mixed_fun <- function(data, sp){
     fit <- do_sigmoid_lme_fit(data)
     if (!is.null(fit)) {
-      b0 <- fixef(fit)[1]
-      b1 <- fixef(fit)[2]
-      SX <- as.numeric(100 * b1 / 4)
-      PX <- as.numeric(b0 / b1)
-      tibble(SX, PX, b0, b1)
+      a <- fixef(fit)[1]
+      b <- fixef(fit)[2]
+      SX <- as.numeric(100 * b / 4)
+      PX <- as.numeric(a / b)
+      tibble(SX, PX, a, b)
     }
   }
 
@@ -818,13 +818,13 @@ sigmoidal_random <- function(Data, W, x, coverage, quiet, bootci, nboot, n, from
   tmp <- fixef(fit)[1] - fixef(fit)[2] * xi
   fit_ <- 100 / (exp(tmp) + 1)
 
-  pred_sigmoidal <- function(b0, b1, P) {
-    tmp <- b0 - b1 * xi
+  pred_sigmoidal <- function(a, b, P) {
+    tmp <- a - b * xi
     100 / (exp(tmp) + 1)
   }
 
   boot3 <- boot2 %>%
-    mutate(ci = map2(b0, b1, pred_sigmoidal, P = xi))
+    mutate(ci = map2(a, b, pred_sigmoidal, P = xi))
   
   mat <- matrix(unlist(boot3$ci), nrow = length(xi))
   min_ <- apply(mat, 1, function(x)quantile(x, 0.025))
@@ -904,11 +904,11 @@ get_boot_pred_sigmoid <- function(f, data, coverage, from = NULL, to = NULL, n =
   bootpred$x <- -preddfr$minP
   bootpred$fit <- normpred
 
-  b0 <- f$boot[,1]
-  b1 <- f$boot[,2]
-  SX <- as.numeric(100 * b1 / 4)
-  PX <- as.numeric(b0 / b1)
-  bootpred$boot <- cbind(SX, PX)
+  a <- as.numeric(f$boot[,1])
+  b <- as.numeric(f$boot[,2])
+ # SX <- as.numeric(100 * b1 / 4)
+ # PX <- as.numeric(b0 / b1)
+  bootpred$boot <- cbind(a, b)
   
   return(bootpred)
 }
