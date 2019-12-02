@@ -903,6 +903,12 @@ get_boot_pred_sigmoid <- function(f, data, coverage, from = NULL, to = NULL, n =
   bootpred <- lapply(bootpred, sigmoid_untrans)
   bootpred$x <- -preddfr$minP
   bootpred$fit <- normpred
+
+  b0 <- f$boot[,1]
+  b1 <- f$boot[,2]
+  SX <- as.numeric(100 * b1 / 4)
+  PX <- as.numeric(b0 / b1)
+  bootpred$boot <- cbind(SX, PX)
   
   return(bootpred)
 }
