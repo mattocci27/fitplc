@@ -294,7 +294,7 @@ fitplc <- function(dfr,
                   Inv_nls_sigmoidal_fixed = Inv_nls_sigmoidal_fixed(Data, W, x, coverage, 
                                                     bootci, nboot, quiet),
                   sigmoidal_random = sigmoidal_random(Data, W, x, coverage, quiet,
-                                                      n, from, to),
+                                                  bootci, nboot, n, from, to),
                   nls_sigmoidal_fixed = nls_sigmoidal_fixed(Data, W, x, coverage,
                                                             bootci, nboot, quiet, n, from , to))
     
@@ -734,7 +734,7 @@ Inv_nls_sigmoidal_fixed <- function(Data, W, x, coverage,
 list(fit = fit, pred = pred, cipars = cipars, test = "test")
 }
 
-sigmoidal_random <- function(Data, W, x, coverage, quiet, n, from, to){
+sigmoidal_random <- function(Data, W, x, coverage, quiet, bootci, nboot, n, from, to){
   
   # With random effect
   fit <- do_sigmoid_lme_fit(Data)
@@ -769,9 +769,69 @@ sigmoidal_random <- function(Data, W, x, coverage, quiet, n, from, to){
   newdat <- data.frame(minP=ps, X=x)
   pred <- list(x=-ps, fit=predict(fit, newdat, level=0), ran=predran)
   pred$fit <- sigmoid_untrans(pred$fit)
-  
 
-list(fit = fit, pred = pred, cipars = cipars)  
+  fit_mixed_fun <- function(data, sp){
+    fit <- do_sigmoid_lme_fit(data)
+    if (!is.null(fit)) {
+      b0 <- fixef(fit)[1]
+      b1 <- fixef(fit)[2]
+      SX <- as.numeric(100 * b1 / 4)
+      PX <- as.numeric(b0 / b1)
+      tibble(SX, PX, b0, b1)
+    }
+  }
+
+  boot_fun <- function(Data, sp, nboot) {
+    tibble(boot = 1:nboot) %>%
+      group_by(boot) %>%
+      nest() %>%
+      mutate(data =
+        map(
+          boot,
+          ~ .cases.resamp(
+            dat = {{Data}}, 
+            cluster = c("G", ".id"), 
+            resample = c(TRUE, TRUE)))) %>%
+      mutate(fit = map(data, fit_mixed_fun, sp)) %>%
+      mutate(tmp = map_lgl(fit, is.null)) %>%
+      filter(tmp == FALSE) %>%
+      dplyr::select(boot, fit) %>%
+      unnest(cols = c(fit)) %>%
+      ungroup
+  }
+
+  boot2 <- boot_fun(Data, sp, nboot)    
+
+  if(is.null(from) || is.null(to)){
+    xval <- Data$P
+    if(is.null(from)) from <- min(xval)
+    if(is.null(to)) to <- max(xval)
+    xi <- seq(from, to, length = n)
+  } else {
+    xi <- Data$P
+  }
+  
+  tmp <- fixef(fit)[1] - fixef(fit)[2] * xi
+  fit_ <- 100 / (exp(tmp) + 1)
+
+  pred_sigmoidal <- function(b0, b1, P) {
+    tmp <- b0 - b1 * xi
+    100 / (exp(tmp) + 1)
+  }
+
+  boot3 <- boot2 %>%
+    mutate(ci = map2(b0, b1, pred_sigmoidal, P = xi))
+  
+  mat <- matrix(unlist(boot3$ci), nrow = length(xi))
+  min_ <- apply(mat, 1, function(x)quantile(x, 0.025))
+  max_ <- apply(mat, 1, function(x)quantile(x, 0.975))
+
+  pred2 <- list(x = xi,
+                fit = fit_,
+                lwr = min_,
+                upr = max_,
+                boot = boot2)
+  list(fit = fit, pred = pred2, cipars = cipars, pred2 = pred)
 }
 
 
