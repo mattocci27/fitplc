@@ -449,13 +449,15 @@ Weibull_random <- function(Data, W, x, coverage, msMaxIter,
 
   fit_mixed_fun <- function(data, sp){
     #fit <- nlme({{relK}} ~ fweibull({{P}}, SX, PX, {{X}}),
-    fit <- nlme(relK ~ fweibull(P, SX, PX, X),
-                fixed=list(SX ~ 1, PX ~ 1),
-                random= SX + PX ~ 1|G,
-                start=list(fixed=c(SX=sp[[2]], 
-                                   PX=sp[[1]])),
-                control=nlmeControl(msMaxIter = msMaxIter, eval.max=1e06),
-                data=data)
+    tryCatch(
+      fit <- nlme(relK ~ fweibull(P, SX, PX, X),
+                  fixed=list(SX ~ 1, PX ~ 1),
+                  random= SX + PX ~ 1|G,
+                  start=list(fixed=c(SX=sp[[2]], 
+                                     PX=sp[[1]])),
+                  control=nlmeControl(msMaxIter = msMaxIter, eval.max=1e06),
+                  data=data),
+       error = function(e){})
     if (!is.null(fit)) {
       SX <- fixef(fit)[1]
       PX <- fixef(fit)[2]
@@ -474,6 +476,8 @@ Weibull_random <- function(Data, W, x, coverage, msMaxIter,
             dat = {{Data}}, 
             cluster = c("G", ".id"), 
             resample = c(TRUE, TRUE)))) %>%
+      mutate(tmp = map(data, ~ length(unique(.$G)))) %>%
+      filter(tmp >  2) %>%
       mutate(fit = map(data, fit_mixed_fun, sp)) %>%
       mutate(tmp = map_lgl(fit, is.null)) %>%
       filter(tmp == FALSE) %>%
@@ -499,8 +503,6 @@ Weibull_random <- function(Data, W, x, coverage, msMaxIter,
                     X = x) 
 
   fit_ <- (1 - relK_) * 100
-
-
   
   pred_fweibull <- function(PX, SX, P, X) {
     relK <- fweibull(P, SX, PX, X) 
@@ -792,6 +794,8 @@ sigmoidal_random <- function(Data, W, x, coverage, quiet, bootci, nboot, n, from
             dat = {{Data}}, 
             cluster = c("G", ".id"), 
             resample = c(TRUE, TRUE)))) %>%
+      mutate(tmp = map(data, ~ length(unique(.$G)))) %>%
+      filter(tmp >  2) %>%
       mutate(fit = map(data, fit_mixed_fun, sp)) %>%
       mutate(tmp = map_lgl(fit, is.null)) %>%
       filter(tmp == FALSE) %>%

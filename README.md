@@ -20,7 +20,9 @@ library(fitplc2)
 
 # New feature
 
-`fitplc` has options for `method = "Inv_Weibull"` and `method =
+- Bootstrap is implemented for mixed models of `method = "Weibull"` and `method = "sigmoidal"` in `fitplc`
+
+- `fitplc` has options for `method = "Inv_Weibull"` and `method =
 "Inv_nls_sigmoidal"`, which estimates Px values using inverse functions of Weibull
 and sigmoidal function, respectively.
 
