@@ -520,7 +520,7 @@ Weibull_random <- function(Data, W, x, coverage, msMaxIter,
                 fit = fit_,
                 lwr = min_,
                 upr = max_,
-                boot = boot2)
+                boot = as.matrix(boot2))
 
   list(fit = fit, pred = pred2, cipars = cipars, pred2 = pred)
 }
@@ -834,7 +834,7 @@ sigmoidal_random <- function(Data, W, x, coverage, quiet, bootci, nboot, n, from
                 fit = fit_,
                 lwr = min_,
                 upr = max_,
-                boot = boot2)
+                boot = as.matrix(boot2))
   list(fit = fit, pred = pred2, cipars = cipars, pred2 = pred)
 }
 
