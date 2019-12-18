@@ -7,36 +7,15 @@
 \alias{fitconds}
 \title{Fit a PLC curve}
 \usage{
-fitcond(
-  dfr,
-  varnames = c(K = "K", WP = "MPa"),
-  Kmax = NULL,
-  WP_Kmax = NULL,
-  rescale_Px = FALSE,
-  ...
-)
+fitcond(dfr, varnames = c(K = "K", WP = "MPa"), Kmax = NULL,
+  WP_Kmax = NULL, rescale_Px = FALSE, ...)
 
-fitplc(
-  dfr,
-  varnames = c(PLC = "PLC", WP = "MPa"),
-  weights = NULL,
-  random = NULL,
-  model = c("Weibull", "Inv_Weibull", "sigmoidal", "Inv_nls_sigmoidal", "loess",
-    "nls_sigmoidal"),
-  x = 50,
-  coverage = 0.95,
-  bootci = TRUE,
-  nboot = 999,
-  quiet = TRUE,
-  from = NULL,
-  to = NULL,
-  n = 101,
-  startvalues = NULL,
-  shift_zero_min = FALSE,
-  loess_span = 0.7,
-  msMaxIter = 1000,
-  ...
-)
+fitplc(dfr, varnames = c(PLC = "PLC", WP = "MPa"), weights = NULL,
+  random = NULL, model = c("Weibull", "Inv_Weibull", "sigmoidal",
+  "Inv_nls_sigmoidal", "loess", "nls_sigmoidal"), x = 50,
+  coverage = 0.95, bootci = TRUE, nboot = 999, quiet = TRUE,
+  from = NULL, to = NULL, n = 101, startvalues = NULL,
+  shift_zero_min = FALSE, loess_span = 0.7, msMaxIter = 1000, ...)
 
 fitplcs(dfr, group, ...)
 
