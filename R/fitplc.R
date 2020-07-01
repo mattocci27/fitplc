@@ -741,10 +741,10 @@ sigmoidal_random <- function(Data, W, x, coverage, quiet, bootci, nboot, n, from
   # With random effect
   fit <- do_sigmoid_lme_fit(Data)
 
-  Px_ci <- car::deltaMethod(fit, "b0/b1", parameterNames=c("b0","b1"))
+  Px_ci <- car::deltaMethod(fit, "b0/b1", parameterNames=c("b0","b1"), level = coverage)
   
   # deltaMethod not needed here but convenient and equivalent
-  Sx_ci <- car::deltaMethod(fit, "100*b1/4", parameterNames=c("b0","b1"))
+  Sx_ci <- car::deltaMethod(fit, "100*b1/4", parameterNames=c("b0","b1"), level = coverage)
   cipars <- as.data.frame(rbind(Sx_ci, Px_ci))
   cipars$SE <- NULL
   dimnames(cipars) <- list(c("SX","PX"),
@@ -777,9 +777,9 @@ sigmoidal_random <- function(Data, W, x, coverage, quiet, bootci, nboot, n, from
     if (!is.null(fit)) {
       a <- fixef(fit)[1]
       b <- fixef(fit)[2]
-      SX <- as.numeric(100 * b / 4)
-      PX <- as.numeric(a / b)
-      tibble(SX, PX, a, b)
+      Sx <- as.numeric(100 * b / 4)
+      Px <- as.numeric(a / b)
+      tibble(Sx, Px, a, b)
     }
   }
 
@@ -804,7 +804,7 @@ sigmoidal_random <- function(Data, W, x, coverage, quiet, bootci, nboot, n, from
       ungroup
   }
 
-  boot2 <- boot_fun(Data, sp, nboot)    
+  boot2 <- boot_fun(Data, sp, nboot)
 
   if(is.null(from) || is.null(to)){
     xval <- Data$P
@@ -829,13 +829,27 @@ sigmoidal_random <- function(Data, W, x, coverage, quiet, bootci, nboot, n, from
   mat <- matrix(unlist(boot3$ci), nrow = length(xi))
   min_ <- apply(mat, 1, function(x)quantile(x, 0.025))
   max_ <- apply(mat, 1, function(x)quantile(x, 0.975))
+ 
+  # boot
+  pred$boot <- as.data.frame(boot2)
+  
+  cisx <- quantile(pred$boot[,"Sx"], c((1-coverage)/2, 1 - (1-coverage)/2))
+  #cisx <- -rev(cisx)
+  cipx <- quantile(pred$boot[,"Px"], c((1-coverage)/2, 1 - (1-coverage)/2))
+  
+  bootpars <- matrix(c(cisx[1],cipx[1],cisx[2],cipx[2]), nrow=2,
+                     dimnames=list(c("SX","PX"),
+                                   c(sprintf("Boot - %s",label_lowci(coverage)),
+                                     sprintf("Boot - %s",label_upci(coverage)))))
+  
+  cipars <- cbind(cipars, bootpars)
 
   pred2 <- list(x = xi,
                 fit = fit_,
                 lwr = min_,
                 upr = max_,
                 boot = as.matrix(boot2))
-  list(fit = fit, pred = pred2, cipars = cipars, pred2 = pred)
+  list(fit = fit, pred = pred2, cipars = cipars, pred2 = pred, bootpars = bootpars)
 }
 
 

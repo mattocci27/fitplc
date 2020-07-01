@@ -12,7 +12,7 @@ To install the development version, use this command:
 
 ```
 # install.packages("devtools")
-devtools::install_github("mattocci27/fitplc")
+devtools::install_github("mattocci27/fitplc2")
 
 library(fitplc2)
  

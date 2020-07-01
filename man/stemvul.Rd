@@ -4,13 +4,15 @@
 \name{stemvul}
 \alias{stemvul}
 \title{An example vulnerability curve}
-\format{\describe{
+\format{
+\describe{
 \item{Species}{One of dpap, egran, ssay}
 \item{Branch}{Replicate branch, multiple branches were measured for each species}
 \item{MPa}{Xylem water potential (MPa)}
 \item{PLC}{Percent loss conductivity}
 \item{Cond}{Raw, unscaled conductivity of branch segment (units)}
-}}
+}
+}
 \description{
 Percent loss conductivity as a function of water potential for three species.
 }
