@@ -575,7 +575,7 @@ sigmoidal_fixed <- function(Data, W, x, coverage,
   # f must be component with 'fit' and 'boot'
   pred <- get_boot_pred_sigmoid(f, Data, coverage, from, to, n)
   
-list(fit = f$fit, pred = pred, cipars = cipars)
+list(fit = f$fit, pred = pred, cipars = cipars, boot_Sx = boot_Sx, boot_Px = boot_Px)
 }
 
 nls_sigmoidal_fixed <- function(Data, W, x, coverage,
@@ -849,7 +849,7 @@ sigmoidal_random <- function(Data, W, x, coverage, quiet, bootci, nboot, n, from
                 lwr = min_,
                 upr = max_,
                 boot = as.matrix(boot2))
-  list(fit = fit, pred = pred2, cipars = cipars, pred2 = pred, bootpars = bootpars)
+  list(fit = fit, pred = pred2, cipars = cipars, pred2 = pred, bootpars = bootpars, boot_Sx = pred$boot[,"Sx"], boot_Px = pred$boot[,"Px"])
 }
 
 

@@ -1,7 +1,7 @@
 Package: fitplc2
 Type: Package
 Title: Fit Hydraulic Vulnerability Curves
-Version: 0.1.0
+Version: 0.1.0-2
 Authors@R: c(person("Remko", "Duursma", role = c("aut", "cre"),email = "remkoduursma@gmail.com"),
              person("Masatoshi", "Katabuchi", role = "ctb"))
 Maintainer: Masatoshi Katabuchi <mattocci27@gmail.com>
