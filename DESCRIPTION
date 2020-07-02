@@ -7,8 +7,8 @@ Authors@R: c(person("Remko", "Duursma", role = c("aut", "cre"),email = "remkoduu
 Maintainer: Masatoshi Katabuchi <mattocci27@gmail.com>
 Description: Fits Weibull or sigmoidal models to percent loss conductivity (plc) curves as a function of plant water potential, computes confidence intervals of parameter estimates and predictions with bootstrap or parametric methods, and provides convenient plotting methods.
 License: GPL
-URL: https://www.github.com/mattocci27/fitplc
-BugReports: https://www.github.com/mattocci27/fitplc/issues
+URL: https://www.github.com/mattocci27/fitplc2
+BugReports: https://www.github.com/mattocci27/fitplc2/issues
 Depends: nlme, car, dplyr, purrr
 Suggests: testthat
 LazyData: yes
