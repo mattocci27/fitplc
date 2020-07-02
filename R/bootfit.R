@@ -4,7 +4,7 @@
 #' @importFrom stats nls
 #' @importFrom stats predict
 #' @importFrom stats quantile
-bootfit <- function(fit, n=999, maxnbad=50, Data, startList, weights=NULL){
+bootfit <- function(fit, n=999, maxnbad=5000, Data, startList, weights=NULL){
   
 
   
